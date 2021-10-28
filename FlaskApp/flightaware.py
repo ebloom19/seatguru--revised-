@@ -17,10 +17,6 @@ FLIGHTAWARE_URL = "https://flightaware.com/live/flight/{}"
 """ gets origin and destination airport code for a given flight """
 @retry(stop_max_attempt_number=5)
 def get_flight_details(flight_code):
-  # IATA code convert to ICAO
-  if len(flight_code) > 2:
-    flight_code = getIataFlightCode(flight_code)
-    
   resp = urlopen(FLIGHTAWARE_URL.format(flight_code)).read()
   print(FLIGHTAWARE_URL.format(flight_code))
   soup = BeautifulSoup(resp, features="html.parser")
@@ -48,17 +44,7 @@ def get_flight_details(flight_code):
   print('Aircraft', aircraft)
   
   return (departureIataCode, arrivalIataCode, aircraft)
-
-# Converts an IATA airline code to ICAO
-def getIataFlightCode(flight_code):
-  flight_num = flight_code[2:]
-  f = open('./static/airlines.json', "r")
-  airlines = json.load(f)
-  for airline in airlines:
-    if airline["iata"] == flight_code[0:2]:
-      return airline["icao"] + flight_num
   
-
   # def extract_aircraft_code(html_soup):
   #   aircraft_code = html_soup.parent.find_next_sibling('td').find('a')
   #   if (aircraft_code):

@@ -113,15 +113,16 @@ def response_for_message_body(message_body):
 	# IATA says that airline codes are two letter
 	# ICAO says that they are three letters, whopee
 
-	airlineCode = re.sub("[^0-9]", "", flight_code)
+	airlineCode = re.sub("[^A-Z]", "", flight_code)
 
 	if len(airlineCode) == 2:
 		airline = getIcaoFlightCode(flight_code)
 		flight_number = flight_code[2:]
-		print(airline, flight_number)
+		flight_code = airline + flight_number
+		print(flight_code)
 	else:
-		airline, flight_number = flight_code[0:2], flight_code[2:]
-		print(airline, flight_number)
+		airline, flight_number = flight_code[0:3], flight_code[3:]
+		print(flight_code)
 
 	try:
 		departureIataCode, arrivalIataCode, aircraft = flightaware.get_flight_details(flight_code)

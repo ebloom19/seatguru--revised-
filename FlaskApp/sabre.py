@@ -39,6 +39,7 @@ def get_access_token():
       raise "Could not authenticate against Sabre!"
 
   credentials   = build_credentials()
+  print(credentials)
   headers       = {
     'Authorization': "Basic {}".format(credentials),
     'Content-Type': 'application/x-www-form-urlencoded'
@@ -48,7 +49,6 @@ def get_access_token():
   response = requests.post(build_auth_endpoint(),
     data=body,
     headers=headers)
-  print('FindTHis ', response)
   return extract_token(response)
 
 # returns a map of all seats in format [(row, seat_number) : { 'available': True, 'price': '100 USD' }] for a given flight
