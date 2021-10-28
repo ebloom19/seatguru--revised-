@@ -19,7 +19,7 @@ FLIGHTAWARE_URL = "https://flightaware.com/live/flight/{}"
 def get_flight_details(flight_code):
   # IATA code convert to ICAO
   if len(flight_code) > 2:
-    flight_code = getAirlineCodes(flight_code)
+    flight_code = getIataFlightCode(flight_code)
     
   resp = urlopen(FLIGHTAWARE_URL.format(flight_code)).read()
   print(FLIGHTAWARE_URL.format(flight_code))
@@ -29,7 +29,14 @@ def get_flight_details(flight_code):
   script = soup.find_all('script')[73].text[25:-1]
   flightData = json.loads(script)
 
-  aircraft = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["aircraftType"]
+  aircraftIncManu = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["aircraftType"]
+
+  if aircraftIncManu == '':
+    aircraftIncManu = str(soup.find_all('meta')[11])[15:-23]
+    
+  # Removing the manufacturer letter 'A' or 'B'
+  aircraft = aircraftIncManu[1:]
+
 
   departUnixTime = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["flightPlan"]["departure"]
   departTime = datetime.utcfromtimestamp(departUnixTime).strftime('%Y-%m-%d %H:%M:%S')
@@ -37,24 +44,20 @@ def get_flight_details(flight_code):
   departureIataCode = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["origin"]["iata"]
   arrivalIataCode = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["destination"]["iata"]
   
-  print(arrivalIataCode, '#', departureIataCode)
+  print(arrivalIataCode, '=>', departureIataCode)
   print('Aircraft', aircraft)
   
   return (departureIataCode, arrivalIataCode, aircraft)
 
 # Converts an IATA airline code to ICAO
-def getAirlineCodes(flight_code):
+def getIataFlightCode(flight_code):
+  flight_num = flight_code[2:]
   f = open('./static/airlines.json', "r")
   airlines = json.load(f)
   for airline in airlines:
     if airline["iata"] == flight_code[0:2]:
-      return airline["icao"] + flight_code[2:]
+      return airline["icao"] + flight_num
   
-  # def extract_iata_airport_code(html_soup):
-  #   # link_text = html_soup.find(class_='track-panel-airport').a.contents[0]
-  #   # iata_search = re.search('.*?([A-Za-z]{3})$', link_text)
-  #   if (iata_search):
-  #     return iata_search.group(1)
 
   # def extract_aircraft_code(html_soup):
   #   aircraft_code = html_soup.parent.find_next_sibling('td').find('a')
