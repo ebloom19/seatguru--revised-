@@ -6,6 +6,7 @@ import twilio.twiml
 import seatguru
 import sabre
 import flightaware
+import json
 
 app = Flask(__name__)
 
@@ -92,6 +93,14 @@ def parse_text_message(message_body):
 
 	return (flightnum, seatnum)
 
+# Converts an IATA airline code to ICAO
+def getIcaoFlightCode(flight_code):
+	f = open('./static/airlines.json', "r")
+	airlines = json.load(f)
+	for airline in airlines:
+		if airline["iata"] == flight_code[0:2]:
+			return airline["icao"]
+
 '''
 Given a message, return a response. This is wrapped by the route
 '''
@@ -103,8 +112,16 @@ def response_for_message_body(message_body):
 
 	# IATA says that airline codes are two letter
 	# ICAO says that they are three letters, whopee
-	airline, flight_number = flight_code[0:2], flight_code[2:]
-	print(airline, flight_number)
+
+	airlineCode = re.sub("[^0-9]", "", flight_code)
+
+	if len(airlineCode) == 2:
+		airline = getIcaoFlightCode(flight_code)
+		flight_number = flight_code[2:]
+		print(airline, flight_number)
+	else:
+		airline, flight_number = flight_code[0:2], flight_code[2:]
+		print(airline, flight_number)
 
 	try:
 		departureIataCode, arrivalIataCode, aircraft = flightaware.get_flight_details(flight_code)
