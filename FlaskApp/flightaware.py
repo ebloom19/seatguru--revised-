@@ -8,7 +8,8 @@ from pprint import pprint
 from bs4 import BeautifulSoup
 from bs4.element import Script
 from retrying import retry
-from attr import attrs
+from datetime import datetime
+
 
 # https://flightaware.com/live/flight/{flightcode}
 FLIGHTAWARE_URL = "https://flightaware.com/live/flight/{}"
@@ -16,29 +17,13 @@ FLIGHTAWARE_URL = "https://flightaware.com/live/flight/{}"
 """ gets origin and destination airport code for a given flight """
 @retry(stop_max_attempt_number=5)
 def get_flight_details(flight_code):
-
-  def extract_iata_airport_code(html_soup):
-    # link_text = html_soup.find(class_='track-panel-airport').a.contents[0]
-    # iata_search = re.search('.*?([A-Za-z]{3})$', link_text)
-    if (iata_search):
-      return iata_search.group(1)
-
-  def extract_aircraft_code(html_soup):
-    aircraft_code = html_soup.parent.find_next_sibling('td').find('a')
-    if (aircraft_code):
-      aircraft_code = aircraft_code['href'].split('/')[-1]
-    # we only need the numeric part of the model
-    # i.e. for H/B744/L we get 744
-    # CRJ 700 borks - http://flightaware.com/live/flight/BAW4449
-    numeric_code = re.search('.*?(\d+).*?$', aircraft_code)
-    if (numeric_code):
-      return numeric_code.group(1)
-
-  # print('FindThis', FLIGHTAWARE_URL.format(flight_code))
+  # IATA code convert to ICAO
+  if len(flight_code) > 2:
+    flight_code = getAirlineCodes(flight_code)
+    
   resp = urlopen(FLIGHTAWARE_URL.format(flight_code)).read()
   print(FLIGHTAWARE_URL.format(flight_code))
   soup = BeautifulSoup(resp, features="html.parser")
-  # print(soup)
 
   # https://www.youtube.com/watch?v=QNLBBGWEQ3Q
   script = soup.find_all('script')[73].text[25:-1]
@@ -46,18 +31,38 @@ def get_flight_details(flight_code):
 
   aircraft = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["aircraftType"]
 
-  print('Aircraft ', aircraft)
+  departUnixTime = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["flightPlan"]["departure"]
+  departTime = datetime.utcfromtimestamp(departUnixTime).strftime('%Y-%m-%d %H:%M:%S')
+
+  departureIataCode = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["origin"]["iata"]
+  arrivalIataCode = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["destination"]["iata"]
   
-
-  # aircraft = soup.find("script").attrs["aircraft"]
-
-  # tag = soup('script')
-  # print('ThisY', aircraft)
+  print(arrivalIataCode, '#', departureIataCode)
+  print('Aircraft', aircraft)
   
-  # arrive    = extract_iata_airport_code(soup.find(class_='track-panel-arrival'))
-  # aircraft  = extract_aircraft_code(soup.find(text='aircraftType'))
+  return (departureIataCode, arrivalIataCode, aircraft)
 
+# Converts an IATA airline code to ICAO
+def getAirlineCodes(flight_code):
+  f = open('./static/airlines.json', "r")
+  airlines = json.load(f)
+  for airline in airlines:
+    if airline["iata"] == flight_code[0:2]:
+      return airline["icao"] + flight_code[2:]
+  
+  # def extract_iata_airport_code(html_soup):
+  #   # link_text = html_soup.find(class_='track-panel-airport').a.contents[0]
+  #   # iata_search = re.search('.*?([A-Za-z]{3})$', link_text)
+  #   if (iata_search):
+  #     return iata_search.group(1)
 
-
-  return (depart, arrive, aircraft)
-
+  # def extract_aircraft_code(html_soup):
+  #   aircraft_code = html_soup.parent.find_next_sibling('td').find('a')
+  #   if (aircraft_code):
+  #     aircraft_code = aircraft_code['href'].split('/')[-1]
+  #   # we only need the numeric part of the model
+  #   # i.e. for H/B744/L we get 744
+  #   # CRJ 700 borks - http://flightaware.com/live/flight/BAW4449
+  #   numeric_code = re.search('.*?(\d+).*?$', aircraft_code)
+  #   if (numeric_code):
+  #     return numeric_code.group(1)

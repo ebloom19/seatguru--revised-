@@ -1,3 +1,4 @@
+from os import confstr
 from flask import Flask, render_template, request, redirect, jsonify
 from datetime import datetime
 import re
@@ -103,9 +104,10 @@ def response_for_message_body(message_body):
 	# IATA says that airline codes are two letter
 	# ICAO says that they are three letters, whopee
 	airline, flight_number = flight_code[0:2], flight_code[2:]
+	print(airline, flight_number)
 
 	try:
-		depart, arrive, aircraft = flightaware.get_flight_details(flight_code)
+		departureIataCode, arrivalIataCode, aircraft = flightaware.get_flight_details(flight_code)
 	except:
 		return "We could not find flight {}. Are you sure you entered the correct information?".format(flight_code)
 
@@ -115,7 +117,7 @@ def response_for_message_body(message_body):
 	# throws error if the flight is not found in Sabre (that's what their API does)
 	current_date = datetime.now().strftime("%Y-%m-%d")
 	try:
-		sabre_seat_map = sabre.get_seat_map(depart, arrive, current_date, airline, flight_number)
+		sabre_seat_map = sabre.get_seat_map(departureIataCode, arrivalIataCode, current_date, airline, flight_number)
 	except:
 		return "There is no flight {} today! Please text us on the day of your flight.".format(flight_code)
 
@@ -136,22 +138,22 @@ def response_for_message_body(message_body):
 
 	if not seat_code:
 		return "For your flight towards {} you should book seats {}. {}".format(
-			arrive, ", ".join(top_seat_codes), best_seat_description)
+			arrivalIataCode, ", ".join(top_seat_codes), best_seat_description)
 
 	my_seat  				= get_seat_info(all_seats, seat_code)
 	if not my_seat:
 		return """Sorry, we could not find your seat for your flight towards {}. To avoid dissapointment,
-try one of these seats {}. {}""".format(arrive, ", ".join(top_seat_codes), best_seat_description)
+try one of these seats {}. {}""".format(arrivalIataCode, ", ".join(top_seat_codes), best_seat_description)
 
 
 	if compare_seat(my_seat, best_seat[1]) >= 0:
 		seat_description = interpolate_description(my_seat, seat_code)
-		return "Your seat is pretty good for your flight to {}! {}".format(arrive, seat_description)
+		return "Your seat is pretty good for your flight to {}! {}".format(arrivalIataCode, seat_description)
 	else:
 		# (21, u'D') -> "21D"
 		seat_description = interpolate_description(best_seat[1], best_seat_code)
 		return "For a nicer flight to {}, try a better seat! How about {}? {}".format(
-			arrive, ", ".join(top_seat_codes), seat_description)
+			arrivalIataCode, ", ".join(top_seat_codes), seat_description)
 
 def create_seat_code(seat_code_tuple):
 	return str(seat_code_tuple[0]) + seat_code_tuple[1]

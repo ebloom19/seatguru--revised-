@@ -1,3 +1,4 @@
+from os import confstr
 from urllib.request import urlopen, URLError
 from retrying import retry
 import json
@@ -42,10 +43,12 @@ def get_access_token():
     'Authorization': "Basic {}".format(credentials),
     'Content-Type': 'application/x-www-form-urlencoded'
   }
+  print(headers)
   body          = 'grant_type=client_credentials'
   response = requests.post(build_auth_endpoint(),
     data=body,
     headers=headers)
+  print('FindTHis ', response)
   return extract_token(response)
 
 # returns a map of all seats in format [(row, seat_number) : { 'available': True, 'price': '100 USD' }] for a given flight
