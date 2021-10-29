@@ -115,6 +115,9 @@ def response_for_message_body(message_body):
 
 	airlineCode = re.sub("[^A-Z]", "", flight_code)
 
+	airline = ''
+	flight_number = 0
+
 	if len(airlineCode) == 2:
 		airline = getIcaoFlightCode(flight_code)
 		flight_number = flight_code[2:]
