@@ -31,7 +31,10 @@ def get_flight_details(flight_code):
     aircraftIncManu = str(soup.find_all('meta')[11])[15:-23]
     
   # Removing the manufacturer letter 'A' or 'B'
-  aircraft = aircraftIncManu[1:]
+  if aircraftIncManu.startswith('A') or aircraftIncManu.startswith('B'):
+    aircraft = aircraftIncManu[1:]
+  else:
+    aircraft = aircraftIncManu
 
 
   departUnixTime = list(flightData["flights"].values())[0]["activityLog"]["flights"][0]["flightPlan"]["departure"]
